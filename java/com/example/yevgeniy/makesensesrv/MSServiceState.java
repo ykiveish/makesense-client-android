@@ -9,16 +9,20 @@ import org.json.JSONObject;
  */
 
 enum ServiceState {IDLE, HAS_API_UUID, LOGIN, DEVICE_CHECK, DEVICE_REGISTER, GET_SENSORS};
+enum SensorState {PUBLISH_IDLE, PUBLISH_SENSOR_LIST, PUBLISH_DATA};
 
 public class MSServiceState implements Runnable {
     private static final String TAG = "MSService";
     Boolean isWorking = false;
     ServiceRequest serviceAPI;
     ServiceState state;
+    SensorState getSensorState;
+    boolean IsSensorState = false;
 
     MSServiceState(ServiceRequest serviceRequest) {
         serviceAPI = serviceRequest;
         isWorking = true;
+        getSensorState = SensorState.PUBLISH_SENSOR_LIST;
     }
 
     public void SetState(ServiceState state) {
@@ -34,6 +38,10 @@ public class MSServiceState implements Runnable {
         while (isWorking){
             switch (state) {
                 case IDLE:
+                    if(IsSensorState) {
+                        state = ServiceState.GET_SENSORS;
+                    }
+
                     try {
                         Thread.sleep(5000);
                     } catch (InterruptedException e) {
@@ -51,6 +59,7 @@ public class MSServiceState implements Runnable {
                     break;
                 case LOGIN:
                     Log.e(TAG, "[INFO] LOGIN");
+                    IsSensorState = false;
                     serviceAPI.Login("ykiveish", "1234", new ServiceCallback() {
                         @Override
                         public void CallbackCall(String data) {
@@ -83,6 +92,7 @@ public class MSServiceState implements Runnable {
                     break;
                 case DEVICE_CHECK:
                     Log.e(TAG, "[INFO] DEVICE_CHECK");
+                    IsSensorState = false;
                     serviceAPI.CheckDevice(new ServiceCallback() {
                         @Override
                         public void CallbackCall(String data) {
@@ -101,16 +111,34 @@ public class MSServiceState implements Runnable {
                     break;
                 case DEVICE_REGISTER:
                     Log.e(TAG, "[INFO] DEVICE_REGISTER");
+                    IsSensorState = false;
                     serviceAPI.RegisterDevice(new ServiceCallback() {
                         @Override
                         public void CallbackCall(String data) {
+                            Log.e(TAG, "[INFO - DEVICE_REGISTER] " + data);
                             state = ServiceState.DEVICE_CHECK;
                         }
                     });
                     state = ServiceState.IDLE;
                     break;
                 case GET_SENSORS:
-                    Log.e(TAG, "[INFO] GET_SENSOR");
+                    Log.e(TAG, "[INFO] GET_SENSORS");
+                    IsSensorState = true;
+
+                    switch (getSensorState) {
+                        case PUBLISH_IDLE:
+                            Log.e(TAG, "[INFO - SENSOR] PUBLISH_IDLE");
+                            break;
+                        case PUBLISH_SENSOR_LIST:
+                            Log.e(TAG, "[INFO - SENSOR] PUBLISH_SENSOR_LIST");
+                            break;
+                        case PUBLISH_DATA:
+                            Log.e(TAG, "[INFO - SENSOR] PUBLISH_DATA");
+
+                            break;
+                    }
+
+                    state = ServiceState.IDLE;
                     break;
             }
         }

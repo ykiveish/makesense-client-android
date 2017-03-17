@@ -91,7 +91,7 @@ public class ServiceRequest implements Runnable {
 
         onRegisterDeviceEvent.add(registerDeviceCall);
         onRegisterDeviceEvent.add(callback);
-        AddRequest(new HttpRequest("GET", LocalRepo.HTTP_SERVER + "/insert/device/" + LocalRepo.API_UUID + "/2/" + LocalRepo.DeviceUUID + "/android/4.3.1", "", false, onRegisterDeviceEvent));
+        AddRequest(new HttpRequest("GET", LocalRepo.HTTP_SERVER + "/insert/device/" + LocalRepo.API_UUID + "/2/" + LocalRepo.DeviceUUID + "/android/4.3.1/SamsungGalaxyS3", "", false, onRegisterDeviceEvent));
     }
 
     public void AddRequest(HttpRequest req) {
