@@ -12,6 +12,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.LinkedList;
+
 public class MSService extends AppCompatActivity {
     private static final String TAG = "MSService";
     ServiceRequest service = null;
@@ -42,6 +44,19 @@ public class MSService extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        CameraSensor FrontCamera = new CameraSensor(1, "FRONT");
+        CameraSensor RearCamera  = new CameraSensor(2, "REAR");
+
+        LocalRepo.SensorsList = new LinkedList();
+        LocalRepo.SensorsList.add(FrontCamera);
+        LocalRepo.SensorsList.add(RearCamera);
+
+        // Thread FrontCameraThread = new Thread(FrontCamera);
+        // FrontCameraThread.start();
+
+        // Thread RearCameraThread = new Thread(RearCamera);
+        // RearCameraThread.start();
 
         service = new ServiceRequest();
         Thread serviceThread = new Thread(service);

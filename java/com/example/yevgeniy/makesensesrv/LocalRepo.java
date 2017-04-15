@@ -1,7 +1,10 @@
 package com.example.yevgeniy.makesensesrv;
 
+import android.app.Activity;
 import android.content.SharedPreferences;
 import android.telephony.TelephonyManager;
+
+import java.util.List;
 
 /**
  * Created by yevgeniy on 06/02/17.
@@ -15,6 +18,12 @@ public class LocalRepo {
     static String DeviceUUID = "";
     static int DeviceID = 0;
     static Boolean IsServiceConnected = false;
+
+    static byte[] CameraFronImageBuffer;
+    static byte[] CameraRearImageBuffer;
+
+    static List SensorsList = null;
+    static int PublishedSensorCount = 0;
 
     static Boolean GetDeviceUUID () {
         if (telephony == null) return false;

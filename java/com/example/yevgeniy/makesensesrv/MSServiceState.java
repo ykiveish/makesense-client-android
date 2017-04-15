@@ -12,7 +12,7 @@ enum ServiceState {IDLE, HAS_API_UUID, LOGIN, DEVICE_CHECK, DEVICE_REGISTER, GET
 enum SensorState {PUBLISH_IDLE, PUBLISH_SENSOR_LIST, PUBLISH_DATA};
 
 public class MSServiceState implements Runnable {
-    private static final String TAG = "MSService";
+    private static final String TAG = "MSServiceState";
     Boolean isWorking = false;
     ServiceRequest serviceAPI;
     ServiceState state;
@@ -131,9 +131,57 @@ public class MSServiceState implements Runnable {
                             break;
                         case PUBLISH_SENSOR_LIST:
                             Log.e(TAG, "[INFO - SENSOR] PUBLISH_SENSOR_LIST");
+                            LocalRepo.PublishedSensorCount = 0;
+                            for (int i = 0; i < LocalRepo.SensorsList.size(); i++) {
+                                AbstractSensor sensor = (AbstractSensor) LocalRepo.SensorsList.get(i);
+                                switch (sensor.SensorType) {
+                                    case 0:
+                                        break;
+                                    case 1: // Camera
+                                        /* Note: FRONT_CAMERA = 1, REAR_CAMERA = 2 */
+                                        CameraSensor camera = (CameraSensor)sensor;
+                                        serviceAPI.PublishCameraSensor(camera.CameraType, new ServiceCallback(){
+                                            @Override
+                                            public void CallbackCall(String data) {
+                                                Log.e(TAG, data);
+                                                LocalRepo.PublishedSensorCount++;
+
+                                                if (LocalRepo.PublishedSensorCount == LocalRepo.SensorsList.size()) {
+                                                    getSensorState = SensorState.PUBLISH_DATA;
+                                                }
+                                            }
+                                        });
+                                        break;
+                                }
+                            }
+                            getSensorState = SensorState.PUBLISH_IDLE;
                             break;
                         case PUBLISH_DATA:
                             Log.e(TAG, "[INFO - SENSOR] PUBLISH_DATA");
+                            for (int i = 0; i < LocalRepo.SensorsList.size(); i++) {
+                                AbstractSensor sensor = (AbstractSensor) LocalRepo.SensorsList.get(i);
+                                switch (sensor.SensorType) {
+                                    case 0:
+                                        break;
+                                    case 1: // Camera
+                                        /* Note: FRONT_CAMERA = 1, REAR_CAMERA = 2 */
+                                        CameraSensor camera = (CameraSensor)sensor;
+                                        if (camera.IsActive()) {
+                                            serviceAPI.PublishCameraSensorImage(camera, new ServiceCallback() {
+                                                @Override
+                                                public void CallbackCall(String data) {
+                                                    Log.e(TAG, data);
+                                                }
+                                            });
+                                        }
+                                        break;
+                                }
+                            }
+                            try {
+                                Thread.sleep(7500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
                             break;
                     }

@@ -6,9 +6,11 @@ import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,6 +34,8 @@ public class ServiceRequest implements Runnable {
     List<ServiceCallback> onLoginEvent;
     List<ServiceCallback> onCheckDeviceEvent;
     List<ServiceCallback> onRegisterDeviceEvent;
+    List<ServiceCallback> onPublishSensorListEvent;
+    List<ServiceCallback> onPublishSensorDataEvent;
 
     BlockingQueue queue = new LinkedBlockingQueue();
 
@@ -57,6 +61,16 @@ public class ServiceRequest implements Runnable {
         public void CallbackCall(String data) {
         }
     } RegisterDeviceHandler registerDeviceCall = new RegisterDeviceHandler();
+
+    class PublishSensorListHandler implements ServiceCallback {
+        public void CallbackCall(String data) {
+        }
+    } PublishSensorListHandler publishSensorListCall = new PublishSensorListHandler();
+
+    class PublishSensorDataHandler implements ServiceCallback {
+        public void CallbackCall(String data) {
+        }
+    } PublishSensorDataHandler publishSensorDataCall = new PublishSensorDataHandler();
 
     public void Login (String user, String password, ServiceCallback callback) {
         if (onLoginEvent == null) {
@@ -94,6 +108,34 @@ public class ServiceRequest implements Runnable {
         AddRequest(new HttpRequest("GET", LocalRepo.HTTP_SERVER + "/insert/device/" + LocalRepo.API_UUID + "/2/" + LocalRepo.DeviceUUID + "/android/4.3.1/SamsungGalaxyS3", "", false, onRegisterDeviceEvent));
     }
 
+    public void PublishCameraSensor (int type, ServiceCallback callback) {
+        if (onPublishSensorListEvent == null) {
+            onPublishSensorListEvent = new ArrayList<ServiceCallback>();
+        } else {
+            onPublishSensorListEvent.clear();
+        }
+
+        onPublishSensorListEvent.add(publishSensorListCall);
+        onPublishSensorListEvent.add(callback);
+        AddRequest(new HttpRequest("GET", LocalRepo.HTTP_SERVER + "/insert/sensor/camera" + "/" + LocalRepo.API_UUID + "/" + LocalRepo.DeviceUUID + "/" + type, "", false, onPublishSensorListEvent));
+    }
+
+    public void PublishCameraSensorImage (CameraSensor camera, ServiceCallback callback) {
+        if (onPublishSensorDataEvent == null) {
+            onPublishSensorDataEvent = new ArrayList<ServiceCallback>();
+        } else {
+            onPublishSensorDataEvent.clear();
+        }
+
+        onPublishSensorDataEvent.add(publishSensorDataCall);
+        onPublishSensorDataEvent.add(callback);
+
+        HttpRequest request = new HttpRequest("POST", LocalRepo.HTTP_SERVER + "/update/sensor/camera/image/" + LocalRepo.API_UUID + "/" + LocalRepo.DeviceUUID + "/" + camera.CameraType, "", false, onPublishSensorDataEvent);
+        request.SetStreamPublish(true);
+        request.StreamBuffer = camera.Buffer;
+        AddRequest(request);
+    }
+
     public void AddRequest(HttpRequest req) {
         queue.add(req);
     }
@@ -108,22 +150,48 @@ public class ServiceRequest implements Runnable {
                 // Create the request to OpenWeatherMap, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod(req.type);
-                urlConnection.connect();
 
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                reader = new BufferedReader(new InputStreamReader(inputStream));
+                if (req.GetStreamPublish() == true) {
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
 
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    buffer.append(line + "\n");
+                    urlConnection.setRequestProperty("Connection", "Keep-Alive");
+                    urlConnection.setRequestProperty("Cache-Control", "no-cache");
+
+                    urlConnection.setReadTimeout(35000);
+                    urlConnection.setConnectTimeout(35000);
+
+                    Log.e(TAG, "[INFO] StreamBuffer size = " + req.StreamBuffer.length);
+                    OutputStream os = urlConnection.getOutputStream();
+                    os.write(req.StreamBuffer);
+                    os.flush(); os.close();
+
+                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                    BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(in));
+                    String line = "";
+                    StringBuilder stringBuilder = new StringBuilder();
+                    while ((line = responseStreamReader.readLine()) != null)
+                        stringBuilder.append(line).append("\n");
+                    responseStreamReader.close();
+                } else {
+                    urlConnection.connect();
+
+                    InputStream inputStream = urlConnection.getInputStream();
+                    StringBuffer buffer = new StringBuffer();
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        buffer.append(line + "\n");
+                    }
+                    dataStr = buffer.toString();
                 }
-                dataStr = buffer.toString();
 
                 for (ServiceCallback listener : req.callbacks) {
                     listener.CallbackCall(dataStr);
                 }
+
+                urlConnection.disconnect();
             }
         } catch (Exception e) {
             e.printStackTrace();
