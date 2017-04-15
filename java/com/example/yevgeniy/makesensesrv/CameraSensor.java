@@ -59,7 +59,7 @@ public class CameraSensor extends AbstractSensor implements Runnable {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
             Buffer = Arrays.copyOf(data, data.length);
-            Log.e(TAG, "[INFO] Image size = " + Buffer.length);
+            // Log.e(TAG, "[INFO] Image size = " + Buffer.length);
         }
     };
 

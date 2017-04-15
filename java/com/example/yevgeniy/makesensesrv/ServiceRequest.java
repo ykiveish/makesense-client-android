@@ -147,6 +147,7 @@ public class ServiceRequest implements Runnable {
 
                 url = new URL(req.server);
                 Log.e(TAG, "[INFO] Opening connection ...");
+                Log.e(TAG, "[INFO] " + req.server);
                 // Create the request to OpenWeatherMap, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod(req.type);
@@ -165,27 +166,20 @@ public class ServiceRequest implements Runnable {
                     OutputStream os = urlConnection.getOutputStream();
                     os.write(req.StreamBuffer);
                     os.flush(); os.close();
-
-                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-                    BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(in));
-                    String line = "";
-                    StringBuilder stringBuilder = new StringBuilder();
-                    while ((line = responseStreamReader.readLine()) != null)
-                        stringBuilder.append(line).append("\n");
-                    responseStreamReader.close();
                 } else {
                     urlConnection.connect();
-
-                    InputStream inputStream = urlConnection.getInputStream();
-                    StringBuffer buffer = new StringBuffer();
-                    reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        buffer.append(line + "\n");
-                    }
-                    dataStr = buffer.toString();
                 }
+
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line + "\n");
+                }
+                dataStr = buffer.toString();
+                reader.close();
 
                 for (ServiceCallback listener : req.callbacks) {
                     listener.CallbackCall(dataStr);

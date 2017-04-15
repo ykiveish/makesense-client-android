@@ -46,14 +46,14 @@ public class MSService extends AppCompatActivity {
         });
 
         CameraSensor FrontCamera = new CameraSensor(1, "FRONT");
-        CameraSensor RearCamera  = new CameraSensor(2, "REAR");
+        // CameraSensor RearCamera  = new CameraSensor(2, "REAR");
 
         LocalRepo.SensorsList = new LinkedList();
         LocalRepo.SensorsList.add(FrontCamera);
-        LocalRepo.SensorsList.add(RearCamera);
+        // LocalRepo.SensorsList.add(RearCamera);
 
-        // Thread FrontCameraThread = new Thread(FrontCamera);
-        // FrontCameraThread.start();
+        Thread FrontCameraThread = new Thread(FrontCamera);
+        FrontCameraThread.start();
 
         // Thread RearCameraThread = new Thread(RearCamera);
         // RearCameraThread.start();
@@ -67,6 +67,10 @@ public class MSService extends AppCompatActivity {
         serviceStateThread.start();
 
         serviceState.SetState(ServiceState.HAS_API_UUID);
+
+        /*
+        * TODO LIST
+        * 1. Multiple Camera instances support */
     }
 
     @Override
